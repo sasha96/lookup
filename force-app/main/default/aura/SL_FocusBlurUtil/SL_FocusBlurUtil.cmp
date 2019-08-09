@@ -1,0 +1,7 @@
+<aura:component>
+    <aura:method name="focus" action="{!c.setFocus}">
+        <aura:attribute name="focus" type="Object" />
+        <aura:attribute name="blur" type="Object" />
+        <aura:attribute name="exceptions" type="String" />
+    </aura:method>
+</aura:component>

@@ -1,0 +1,158 @@
+<aura:component controller="SL_LookupController"
+    implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes" access="global">
+
+    <aura:attribute type="String" name="objectsName" default="Opportunity; Contact" />
+    <aura:attribute type="String" name="objsApiName" default="Opportunity; Contact" />
+    <aura:attribute type="String" name="searchField" default="Name" />
+    <aura:attribute type="String" name="iconParams" default="standard:opportunity;standard:contact" />
+    <aura:attribute type="String" name="searchName" default="Search Opportunity..." />
+    <aura:attribute type="String" name="soslParams" default=" Name != 'underfiend' " />
+    <aura:attribute type="Integer" name="limitOfRecords" default="15" />
+    <aura:attribute type="String" name="recordId" default="" />
+
+    <aura:attribute type="Boolean" name="isEmptyIcon" access="private" />
+    <aura:attribute type="List" name="lstRecords" access="private" />
+    <aura:attribute type="Object" name="searchTimeout" access="private" />
+    <aura:attribute type="String" name="searchString" access="private" />
+    <aura:attribute type="Boolean" name="isDropdownOpen" access="public" />
+    <aura:attribute type="Boolean" name="isInputdropdownOpen" access="public" />
+    <aura:attribute type="List" name="listOfTypes" access="private" />
+    <aura:attribute type="Object" name="selectedType" access="private" />
+    <aura:attribute type="Object" name="selectedRecord" access="private" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <c:SL_FocusBlurUtil aura:id="dropdownUtilType" />
+    <c:SL_FocusBlurUtil aura:id="dropdownUtil" />
+
+    <aura:if isTrue="{!v.listOfTypes.length == 1}">
+
+        <c:SL_Lookup objectName="{!v.objectName}" searchField="{!v.searchField}" iconParam="{!v.iconParams}"
+            searchName="{!v.searchName}" soslParams="{!v.soslParams}" objApiName="{!v.objsApiName}"
+            limitOfRecords="{!v.limitOfRecords}" recordId="{!v.recordId}" />
+
+        <aura:set attribute="else">
+            <div class="slds-form-element">
+                <div class="slds-form-element__control main-form-class">
+                    <div class="slds-scope slds-form-element__label">
+                        <aura:unescapedHtml value="{!v.selectedType.objectName}" />
+                    </div>
+                    <div class="slds-combobox_container">
+                        <div class="slds-combobox" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                            <aura:if isTrue="{!!v.selectedRecord}">
+                                <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right input-main-class"
+                                    role="none">
+                                    <span class="type-icon-class" onclick="{!c.handlerTypes}">
+                                        <span
+                                            class="slds-media__figure slds-listbox__option-icon drop-down-list-icon-class">
+                                            <lightning:icon iconName="{!v.selectedType.iconName}" size="small" />
+                                            <span class='button-down-class'>
+                                                <lightning:icon iconName="utility:down" size="x-small" />
+                                            </span>
+                                        </span>
+                                        <aura:if isTrue="{!v.isDropdownOpen}">
+                                            <div class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid"
+                                                role="listbox">
+                                                <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                                    <aura:iteration items="{!v.listOfTypes}" var="item">
+                                                        <div class="slds-media slds-listbox__option slds-listbox__option__option_entity slds-listbox__option_has-meta item-list-class"
+                                                            role="option" data-name="{!item.objectName}"
+                                                            onclick="{!c.selectTypeHandler}">
+                                                            <span
+                                                                class="slds-media__figure slds-listbox__option-icon drop-down-list-icon-class">
+                                                                <lightning:icon iconName="{!item.iconName}"
+                                                                    size="small" />
+                                                            </span>
+                                                            <span
+                                                                class="{! 'slds-media__body' + (v.isEmptyIcon ?  ' addition-padding-class ' : ' ' )}">
+                                                                <span
+                                                                    class="slds-listbox__option-text slds-listbox__option-text_entity">{!item.objectName}</span>
+                                                            </span>
+                                                        </div>
+                                                    </aura:iteration>
+                                                </ul>
+                                            </div>
+                                        </aura:if>
+                                    </span>
+                                    <span>
+                                        <ui:inputText required="false"
+                                            class="slds-input slds-combobox__input input-padding-class"
+                                            placeholder="{!v.searchName}" value="{!v.searchString}" updateOn="keyup"
+                                            click="{!c.setFocus}" keyup="{!c.doSearch}" />
+                                    </span>
+                                    <span
+                                        class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                        <lightning:icon iconName="utility:search" size="xx-small" />
+                                    </span>
+                                </div>
+                                <div class="{!'slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid' + (v.isInputdropdownOpen ? '' : ' slds-hide')}"
+                                    role="listbox">
+                                    <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                        <aura:if isTrue="{!v.lstRecords.length == 0}">
+                                            <li role="presentation" class="slds-listbox__item">
+                                                <div class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta"
+                                                    role="option">
+                                                    <span class="slds-media__body">
+                                                        <span
+                                                            class="slds-listbox__option-text slds-listbox__option-text_entity">No
+                                                            results...</span>
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        </aura:if>
+                                        <aura:iteration items="{!v.lstRecords}" var="option">
+                                            <li role="presentation" class="slds-listbox__item">
+                                                <div class="slds-media slds-listbox__option slds-listbox__option__option_entity slds-listbox__option_has-meta"
+                                                    role="option" data-id="{!option.Id}" onclick="{!c.selectOption}">
+                                                    <aura:if isTrue="{!v.isEmptyIcon}">
+                                                        <aura:set attribute="else">
+                                                            <span
+                                                                class="slds-media__figure slds-listbox__option-icon drop-down-list-icon-class">
+                                                                <lightning:icon iconName="{!v.selectedType.iconName}"
+                                                                    size="small" />
+                                                            </span>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                    <span
+                                                        class="{! 'slds-media__body' + (v.isEmptyIcon ?  ' addition-padding-class ' : ' ' )}">
+                                                        <span
+                                                            class="slds-listbox__option-text slds-listbox__option-text_entity">{!option.objName}</span>
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        </aura:iteration>
+                                    </ul>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.selectedRecord}">
+                                <div>
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                        role="none">
+                                        <div class="selected-item-class">
+                                            <div class="selected-item-icon-class">
+                                                <lightning:icon iconName="{!v.selectedType.iconName}" size="small" />
+                                            </div>
+                                            <div
+                                                class="{! ' slds-pill content selected-text-class ' + (v.isEmptyIcon ?  '  ' : ' addition-mergin-class' )}">
+                                                <div class="slds-truncate selected-obj-class">
+                                                    {!v.selectedRecord.objName}
+                                                </div>
+                                                <button class="slds-button remove-icon-class"
+                                                    onclick="{!c.handleRemove}">
+                                                    <lightning:icon class="slds-button__icon" iconName="utility:close"
+                                                        size="x-small" alternativeText="Remove" />
+                                                    <span class="slds-assistive-text">Remove</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aura:set>
+    </aura:if>
+
+</aura:component>
